@@ -37,44 +37,26 @@ SmoothingSpline::SmoothingSpline(const double &smooth) {
 }
 
 
-void SmoothingSpline::transitionToMasterElement(int segNum, const double &X, double &ksi) const {
-    ksi = 2.0 * (X - points[segNum].x()) / (points[segNum + 1].x() - points[segNum].x()) - 1.0;
+void SmoothingSpline::transitionToMasterElement(int segmentIndex, const double &X, double &ksi) const {
+    ksi = 2.0 * (X - points[segmentIndex].x()) / (points[segmentIndex + 1].x() - points[segmentIndex].x()) - 1.0;
 }
 
-double SmoothingSpline::basisFunction(int Number, const double &ksi) const {
-    switch (Number) {
-        case 1: {
-            return 0.5 * (1 - ksi);
-        }
-        case 2: {
-            return 0.5 * (1 + ksi);
-        }
-        default: {
-            throw runtime_error("Error in the basis function number...");
-        }
-    }
+double SmoothingSpline::basisFunction(int number, const double &ksi) const {
+    if (number == 1) return 0.5 * (1 - ksi);
+    if (number == 2) return 0.5 * (1 + ksi);
+    throw runtime_error("Error in the basis function number...");
 }
 
 
 double SmoothingSpline::derBasisFunction(int number) const {
-    switch (number) {
-        case 1: {
-            return -0.5;
-        }
-        case 2: {
-            return 0.5;
-        }
-        default: {
-            throw runtime_error("Error in the basis function derivative number...");
-            break;
-        }
-    }
+        if (number == 1) return -0.5;
+        if (number == 2) return 0.5;
+        throw runtime_error("Error in the basis function derivative number...");
 }
 
-void SmoothingSpline::updateSpline(const vector<Point> &points,
-                                   const vector<double> &fValue) {
-    double sigma = calculateSigma(fValue);
-    double mean = calculateMean(fValue);
+void SmoothingSpline::updateSpline(const vector<Point> &points, const vector<double> &values) {
+    double sigma = calculateSigma(values);
+    double mean = calculateMean(values);
     cout << "mean " << mean << endl;
     cout << "sigma " << sigma << endl;
 
@@ -82,18 +64,18 @@ void SmoothingSpline::updateSpline(const vector<Point> &points,
     this->points.clear();
     for (auto &elem: points) this->points.push_back(elem);
 
-    int numSegments = points.size() - 1;
+    int numberOfSegments = points.size() - 1;
 
-    alpha.resize(numSegments + 1);
+    alpha.resize(numberOfSegments + 1);
 
     vector<double> a, b, c;
-    a.resize(numSegments + 1);
-    b.resize(numSegments + 1);
-    c.resize(numSegments + 1);
+    a.resize(numberOfSegments + 1);
+    b.resize(numberOfSegments + 1);
+    c.resize(numberOfSegments + 1);
 
 
-    function<void(int Num_Segment, const Point &point, const double &F_Val, const double &w)>
-            Assembling = [&](int i, const Point &point, const double &F_Val, const double &w) {
+    function<void(int Num_Segment, const Point &point, const double &values, const double &w)>
+            Assembling = [&](int i, const Point &point, const double &values, const double &w) {
                 double X = point.x(), ksi;
                 transitionToMasterElement(i, X, ksi);
                 double f1 = basisFunction(1, ksi);
@@ -103,11 +85,11 @@ void SmoothingSpline::updateSpline(const vector<Point> &points,
                 b[i + 1] += (1.0 - smooth) * w * f2 * f2;
                 a[i + 1] += (1.0 - smooth) * w * f1 * f2;
                 c[i] += (1.0 - smooth) * w * f2 * f1;
-                alpha[i] += (1.0 - smooth) * w * f1 * F_Val;
-                alpha[i + 1] += (1.0 - smooth) * w * f2 * F_Val;
+                alpha[i] += (1.0 - smooth) * w * f1 * values;
+                alpha[i + 1] += (1.0 - smooth) * w * f2 * values;
             };
 
-    for (int i = 0; i < numSegments; i++) {
+    for (int i = 0; i < numberOfSegments; i++) {
         double W = 1.0;
 
         // if (577 <= i and i <= 1154) {
@@ -116,12 +98,12 @@ void SmoothingSpline::updateSpline(const vector<Point> &points,
         //     W = 0.01;
         // }
 
-        // if (fabs(mean - fValue[i]) > fabs(3 * sigma)) {
+        // if (fabs(mean - values[i]) > fabs(3 * sigma)) {
         //     W = 0.01;
         // }
 
-        Assembling(i, this->points[i], fValue[i], W);
-        Assembling(i, this->points[i + 1], fValue[i + 1], W);
+        Assembling(i, this->points[i], values[i], W);
+        Assembling(i, this->points[i + 1], values[i + 1], W);
 
         double h = points[i + 1].x() - points[i].x();
         b[i] += 1.0 / h * smooth;
@@ -130,22 +112,22 @@ void SmoothingSpline::updateSpline(const vector<Point> &points,
         c[i] -= 1.0 / h * smooth;
     }
 
-    for (int j = 1; j < numSegments + 1; j++) {
+    for (int j = 1; j < numberOfSegments + 1; j++) {
         b[j] -= a[j] / b[j - 1] * c[j - 1];
         alpha[j] -= a[j] / b[j - 1] * alpha[j - 1];
     }
 
-    alpha[numSegments] /= b[numSegments];
-    for (int j = numSegments - 1; j >= 0; j--)
+    alpha[numberOfSegments] /= b[numberOfSegments];
+    for (int j = numberOfSegments - 1; j >= 0; j--)
         alpha[j] = (alpha[j] - alpha[j + 1] * c[j]) / b[j];
 }
 
 void SmoothingSpline::getValue(const Point &point, double *res) const {
     double eps = 1e-7;
-    int numSegments = points.size() - 1;
+    int numberOfSegments = points.size() - 1;
     double X = point.x();
 
-    for (int i = 0; i < numSegments; i++) {
+    for (int i = 0; i < numberOfSegments; i++) {
         if (X > points[i].x() && X < points[i + 1].x() ||
             fabs(X - points[i].x()) < eps ||
             fabs(X - points[i + 1].x()) < eps) {

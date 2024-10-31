@@ -1,8 +1,8 @@
 #pragma once
-#ifndef Smoothing_Spline_1D_h
-#define Smoothing_Spline_1D_h
+#ifndef smoothing_spline_h
+#define smoothing_spline_h
 
-#include "point.h"
+#include "point/point.h"
 #include <vector>
 
 using namespace std;

@@ -1,7 +1,8 @@
-#include <assert.h>
-#include "point.h"
-#include "smoothing_spline.h"
 #include "fstream"
+#include "iostream"
+
+#include "spline/point/point.h"
+#include "spline/smoothing_spline.h"
 
 #define OUTPUT_FILE_PATH "../output.txt"
 #define VALUES_FILE_PATH "../values.txt"
@@ -13,7 +14,9 @@ using namespace std;
 void readValues(vector<double> &values) {
     ifstream file(VALUES_FILE_PATH);
 
-    assert(file.is_open());
+    if (not file.is_open()) {
+        throw runtime_error("Values file not found!");
+    }
 
     for (int i = 0; i < NUMBER_OF_TESTS; i++) {
         double value;
@@ -25,7 +28,10 @@ void readValues(vector<double> &values) {
 
 void writeResults(const SmoothingSpline &spline) {
     ofstream file(OUTPUT_FILE_PATH);
-    assert(file.is_open());
+
+    if (not file.is_open()) {
+        throw runtime_error("Result file not found!");
+    }
 
     double res[3];
 

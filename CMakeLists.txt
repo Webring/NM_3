@@ -6,7 +6,6 @@ set(CMAKE_CXX_STANDARD 17)
 add_executable(NM_3 main.cpp
         Point.cpp
         Point.h
-        Spline.h
-        Smoothing_Spline_1D.h
-        Smoothing_Spline_1D.cpp
+        smoothing_spline.h
+        smoothing_spline.cpp
 )

@@ -1,7 +1,6 @@
 #include <assert.h>
-#include "Point.h"
-#include "Smoothing_Spline_1D.h"
-#include <iomanip>
+#include "point.h"
+#include "smoothing_spline.h"
 #include "fstream"
 
 #define OUTPUT_FILE_PATH "../output.txt"
@@ -24,14 +23,14 @@ void readValues(vector<double> &values) {
     file.close();
 }
 
-void writeResults(const Com_Methods::Smoothing_Spline_1D &spline) {
+void writeResults(const SmoothingSpline &spline) {
     ofstream file(OUTPUT_FILE_PATH);
     assert(file.is_open());
 
     double res[3];
 
     for (int i = 1; i <= NUMBER_OF_TESTS; i++) {
-        spline.Get_Value(Com_Methods::Point(i, 0.0, 0.0), res);
+        spline.getValue(Point(i, 0.0, 0.0), res);
         file << res[0] << endl;
     }
 
@@ -39,17 +38,17 @@ void writeResults(const Com_Methods::Smoothing_Spline_1D &spline) {
 }
 
 int main() {
-    vector<Com_Methods::Point> Mesh;
+    vector<Point> Mesh;
     for (int i = 1; i <= NUMBER_OF_TESTS; i++) {
-        Mesh.push_back(Com_Methods::Point(i, 0.0, 0.0));
+        Mesh.push_back(Point(i, 0.0, 0.0));
     }
 
     vector<double> values;
     readValues(values);
 
-    Com_Methods::Smoothing_Spline_1D spline(SMOOTH_COEF);
+    SmoothingSpline spline(SMOOTH_COEF);
 
-    spline.Update_Spline(Mesh, values);
+    spline.updateSpline(Mesh, values);
 
     writeResults(spline);
 }
